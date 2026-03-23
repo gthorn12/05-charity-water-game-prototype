@@ -28,14 +28,18 @@ Secondary Colors:
     }
 
     #game-shell {
-      width: 380px;
-      max-width: 95vw;
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 0 10px;
     }
 
     #game {
       position: relative;
       width: 100%;
-      height: 700px;
+      aspect-ratio: 9 / 16;
+      max-height: 820px;
+      min-height: 480px;
       overflow: hidden;
       border: 10px solid #111;
       border-radius: 10px;
@@ -384,4 +388,108 @@ Secondary Colors:
       text-align: center;
       font-size: 15px;
       line-height: 1.4;
+    }
+
+    @media (max-width: 680px) {
+      body {
+        padding: 14px;
+      }
+
+      #game {
+        min-height: 420px;
+        max-height: 86vh;
+      }
+
+      .hud {
+        top: 12px;
+        padding: 0 10px;
+      }
+
+      .title {
+        font-size: clamp(28px, 6vw, 38px);
+      }
+
+      .stats {
+        gap: 12px;
+        font-size: clamp(16px, 4vw, 22px);
+      }
+
+      .message {
+        top: 110px;
+        min-width: 170px;
+        font-size: 17px;
+        padding: 10px 12px;
+      }
+
+      .panel-text {
+        font-size: clamp(18px, 4.5vw, 24px);
+        max-width: 240px;
+      }
+
+      .big-score {
+        font-size: clamp(30px, 8vw, 46px);
+      }
+
+      button,
+      .reset-btn {
+        font-size: 20px;
+        padding: 12px 26px;
+      }
+
+      .reset-btn {
+        left: 8px;
+        bottom: 8px;
+        padding: 8px 12px;
+      }
+
+      .bucket {
+        width: 76px;
+        height: 70px;
+      }
+
+      .ground {
+        height: 62px;
+      }
+
+      .cloud.one,
+      .cloud.two,
+      .cloud.three,
+      .cloud.four,
+      .cloud.five {
+        transform: scale(0.75);
+      }
+
+      .tree {
+        width: 58px;
+        height: 100px;
+      }
+
+      .instructions {
+        font-size: 13px;
+        margin-top: 10px;
+      }
+    }
+
+    @media (min-width: 900px) {
+      body {
+        padding: 26px;
+      }
+
+      #game-shell {
+        max-width: 720px;
+      }
+
+      .title {
+        font-size: 50px;
+      }
+
+      .stats {
+        gap: 28px;
+        font-size: 24px;
+      }
+
+      button {
+        font-size: 34px;
+        padding: 18px 42px;
+      }
     }
