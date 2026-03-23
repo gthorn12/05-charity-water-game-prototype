@@ -1,13 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Charity Water Game</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Water Drop</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-    <h1>Welcome to the Charity Water Game Prototype</h1>
-    <script src="script.js"></script>
+  <div id="game-shell">
+    <div id="game" aria-label="Water Drop game">
+      <div class="clouds">
+        <div class="cloud five"></div>
+        <div class="cloud one"></div>
+        <div class="cloud two"></div>
+        <div class="cloud three"></div>
+        <div class="cloud four"></div>
+      </div>
+
+      <div class="hud">
+        <img src="img/cw_logo_horizontal.png" alt="charity: water logo" class="brand-logo">
+        <h1 class="title">Water Drop</h1>
+        <div class="stats">
+          <div>Score: <span id="score">0</span></div>
+          <div>Lives: <span id="lives">3</span></div>
+          <div>Time: <span id="timer">0:30</span></div>
+        </div>
+      </div>
+
+      <div id="message" class="message">Catch clean water!</div>
+
+      <div id="startScreen" class="start-screen">
+        <div class="panel-text">Collect clean water drops. Avoid dirty drops before they hit the ground.</div>
+        <button id="startBtn">Start</button>
+      </div>
+
+      <div id="gameOverScreen" class="game-over-screen hidden">
+        <div class="panel-text">Game Over!</div>
+        <div class="big-score">Score: <span id="finalScore">0</span></div>
+        <button id="restartBtn">Play Again?</button>
+      </div>
+
+      <div class="tree left">
+        <div class="trunk"></div>
+        <div class="leaf a"></div>
+        <div class="leaf b"></div>
+        <div class="leaf c"></div>
+        <div class="leaf d"></div>
+      </div>
+
+      <div class="tree right">
+        <div class="trunk"></div>
+        <div class="leaf a"></div>
+        <div class="leaf b"></div>
+        <div class="leaf c"></div>
+        <div class="leaf d"></div>
+      </div>
+
+      <div class="bucket"></div>
+      <div class="ground"></div>
+      <button id="resetBtn" class="reset-btn hidden" aria-label="Reset game">Reset</button>
+    </div>
+
+    <div class="instructions">
+      Tap or click the falling drops. Blue drops increase your score. Dirty drops cost points and lives.
+    </div>
+  </div>
+  <script src="script.js"></script>
 </body>
 </html>
