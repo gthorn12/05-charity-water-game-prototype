@@ -8,9 +8,13 @@ const timerEl = document.getElementById('timer');
 const finalScoreEl = document.getElementById('finalScore');
 const startScreen = document.getElementById('startScreen');
 const gameOverScreen = document.getElementById('gameOverScreen');
+const difficultyScreen = document.getElementById('difficultyScreen');
 const startBtn = document.getElementById('startBtn');
 const restartBtn = document.getElementById('restartBtn');
 const resetBtn = document.getElementById('resetBtn');
+const easyBtn = document.getElementById('easyBtn');
+const normalBtn = document.getElementById('normalBtn');
+const hardBtn = document.getElementById('hardBtn');
 const messageEl = document.getElementById('message');
 
 let score = 0;
@@ -24,6 +28,7 @@ let lastSpawn = 0;
 let spawnDelay = 650;
 let speedMultiplier = 1;
 let messageTimeout = null;
+let selectedDifficulty = 'normal';
 const drops = [];
 const groundTop = () => game.clientHeight - 72;
 
@@ -181,11 +186,23 @@ function startGame() {
   running = true;
   lastSpawn = 0;
   spawnDelay = 650;
-  speedMultiplier = 1;
+  
+  // Apply difficulty multiplier based on selected difficulty
+  // Easy: 50% slower (multiply by 0.5)
+  // Normal: no change (multiply by 1)
+  // Hard: 15% faster (multiply by 1.15)
+  const difficultyMultipliers = {
+    'easy': 0.5,
+    'normal': 1,
+    'hard': 1.15
+  };
+  speedMultiplier = difficultyMultipliers[selectedDifficulty];
+  
   clearDrops();
   updateHud();
   updateTimer();
   startScreen.classList.add('hidden');
+  difficultyScreen.classList.add('hidden');
   gameOverScreen.classList.add('hidden');
   resetBtn.classList.remove('hidden');
   showMessage('Catch the clean water!', 1200);
@@ -256,8 +273,30 @@ function endGame(isWin = false) {
   }
 }
 
-startBtn.addEventListener('click', startGame);
-restartBtn.addEventListener('click', startGame);
+startBtn.addEventListener('click', () => {
+  startScreen.classList.add('hidden');
+  difficultyScreen.classList.remove('hidden');
+});
+
+easyBtn.addEventListener('click', () => {
+  selectedDifficulty = 'easy';
+  startGame();
+});
+
+normalBtn.addEventListener('click', () => {
+  selectedDifficulty = 'normal';
+  startGame();
+});
+
+hardBtn.addEventListener('click', () => {
+  selectedDifficulty = 'hard';
+  startGame();
+});
+
+restartBtn.addEventListener('click', () => {
+  gameOverScreen.classList.add('hidden');
+  difficultyScreen.classList.remove('hidden');
+});
 resetBtn.addEventListener('click', () => {
   resetBtn.disabled = true;
   setTimeout(() => { resetBtn.disabled = false; }, 500);

@@ -167,7 +167,8 @@ Secondary Colors:
     }
 
     .start-screen,
-    .game-over-screen {
+    .game-over-screen,
+    .difficulty-screen {
       position: absolute;
       inset: 0;
       display: flex;
@@ -236,6 +237,30 @@ Secondary Colors:
       cursor: not-allowed;
       box-shadow: 0 2px 0 #c89d00;
       transform: translateY(1px);
+    }
+
+    .difficulty-options {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      width: 100%;
+      max-width: 200px;
+    }
+
+    .difficulty-btn {
+      background: #f3c300;
+      box-shadow: 0 6px 0 #c89d00;
+      font-size: 16px;
+      padding: 14px 32px;
+    }
+
+    .difficulty-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .difficulty-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 3px 0 #c89d00;
     }
 
     .drop {
