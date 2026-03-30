@@ -16,6 +16,7 @@ const easyBtn = document.getElementById('easyBtn');
 const normalBtn = document.getElementById('normalBtn');
 const hardBtn = document.getElementById('hardBtn');
 const messageEl = document.getElementById('message');
+const charityFooter = document.getElementById('charityFooter');
 
 let score = 0;
 let lives = 3;
@@ -33,6 +34,8 @@ const drops = [];
 const groundTop = () => game.clientHeight - 72;
 
 function showMessage(text, duration = 900) {
+  if (Math.random() > 0.45) return; // 45% chance to show messages
+
   messageEl.textContent = text;
   messageEl.classList.add('show');
   clearTimeout(messageTimeout);
@@ -204,6 +207,7 @@ function startGame() {
   startScreen.classList.add('hidden');
   difficultyScreen.classList.add('hidden');
   gameOverScreen.classList.add('hidden');
+  charityFooter.classList.add('hidden');
   resetBtn.classList.remove('hidden');
   showMessage('Catch the clean water!', 1200);
 
@@ -263,6 +267,7 @@ function endGame(isWin = false) {
   const panelText = document.querySelector('.panel-text');
   panelText.textContent = isWin ? 'YOU WIN!!' : 'Game Over!';
   gameOverScreen.classList.remove('hidden');
+  charityFooter.classList.remove('hidden');
   showMessage(isWin ? 'Great job! You won!' : 'The well ran dry...');
 
   resetBtn.classList.add('hidden');
@@ -295,6 +300,7 @@ hardBtn.addEventListener('click', () => {
 
 restartBtn.addEventListener('click', () => {
   gameOverScreen.classList.add('hidden');
+  charityFooter.classList.add('hidden');
   difficultyScreen.classList.remove('hidden');
 });
 resetBtn.addEventListener('click', () => {
