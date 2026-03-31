@@ -274,6 +274,7 @@ Secondary Colors:
       z-index: 4;
       cursor: pointer;
       transform-origin: center;
+      transition: transform 0.1s ease;
     }
 
     .drop.good {
@@ -284,6 +285,10 @@ Secondary Colors:
     .drop.bad {
       background: #5b3a22;
       box-shadow: inset -5px -6px 0 rgba(255,255,255,0.06);
+    }
+
+    .drop:active {
+      transform: scale(1.2);
     }
 
     .drop::after {

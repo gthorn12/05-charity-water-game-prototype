@@ -4,7 +4,6 @@ console.log('JavaScript file is linked correctly.');
 const game = document.getElementById('game');
 const scoreEl = document.getElementById('score');
 const livesEl = document.getElementById('lives');
-const timerEl = document.getElementById('timer');
 const finalScoreEl = document.getElementById('finalScore');
 const startScreen = document.getElementById('startScreen');
 const gameOverScreen = document.getElementById('gameOverScreen');
@@ -20,21 +19,31 @@ const charityFooter = document.getElementById('charityFooter');
 
 let score = 0;
 let lives = 3;
-let timeLeft = 30;
 let running = false;
 let animationId = null;
-let timerInterval = null;
-let timerStart = 0;
 let lastSpawn = 0;
 let spawnDelay = 650;
 let speedMultiplier = 1;
 let messageTimeout = null;
 let selectedDifficulty = 'normal';
+let streak = 0;
+let points = 0;
+let speedIncreaseCounter = 0;
+let bonus2x = false;
+let bonus3x = false;
 const drops = [];
 const groundTop = () => game.clientHeight - 72;
 
-function showMessage(text, duration = 900) {
-  if (Math.random() > 0.45) return; // 45% chance to show messages
+// Preload water sound
+const waterSound = new Audio('audio/water.mp3');
+waterSound.preload = 'auto';
+
+// Preload applause sound
+const applauseSound = new Audio('audio/applause.mp3');
+applauseSound.preload = 'auto';
+
+function showMessage(text, duration = 900, always = false) {
+  if (!always && Math.random() > 0.45) return; // 45% chance to show messages unless always
 
   messageEl.textContent = text;
   messageEl.classList.add('show');
@@ -47,10 +56,6 @@ function showMessage(text, duration = 900) {
 function updateHud() {
   scoreEl.textContent = score;
   livesEl.textContent = lives;
-}
-
-function updateTimer() {
-  timerEl.textContent = `0:${timeLeft.toString().padStart(2, '0')}`;
 }
 
 function createSplash(text, x, y, bad = false) {
@@ -72,21 +77,49 @@ function removeDrop(dropObj) {
 function catchDrop(dropObj) {
   if (!running) return;
 
+  dropObj.el.style.transform = "scale(1.2)";
+  dropObj.el.style.opacity = "0.6";
+
   if (dropObj.type === 'good') {
-    score += 1;
-    createSplash('+1', dropObj.x, dropObj.y);
-    if (score >= 10) {
-      endGame(true);
-      return;
+    // Play water sound
+    waterSound.currentTime = 0;
+    waterSound.play().catch(e => console.log('Audio play failed:', e));
+
+    streak++;
+    points = 1;
+
+    if (streak > 10) {
+      points = 2;
     }
-    if (score > 0 && score % 8 === 0) {
-      speedMultiplier += 0.12;
+    if (streak > 25) {
+      points = 3;
+    }
+
+    score += points;
+    createSplash(`+${points}`, dropObj.x, dropObj.y);
+    speedIncreaseCounter += points;
+
+    if (streak > 10 && !bonus2x) {
+      showMessage('2X BONUS!', 900, true);
+      bonus2x = true;
+    } else if (streak > 25 && !bonus3x) {
+      showMessage('3X BONUS!', 900, true);
+      bonus3x = true;
+      launchConfetti();
+      applauseSound.currentTime = 0;
+      applauseSound.play().catch(e => console.log('Applause play failed:', e));
+    } else if (speedIncreaseCounter >= 50) {
+      speedMultiplier += 0.05;
       spawnDelay = Math.max(300, spawnDelay - 35);
       showMessage('Nice! The rain is picking up!');
+      speedIncreaseCounter -= 50;
     } else {
       showMessage('Fresh water collected!', 550);
     }
   } else {
+    streak = 0;
+    bonus2x = false;
+    bonus3x = false;
     score = Math.max(0, score - 2);
     lives -= 1;
     createSplash('-2', dropObj.x, dropObj.y, true);
@@ -101,6 +134,9 @@ function catchDrop(dropObj) {
 function missDrop(dropObj) {
   if (dropObj.type === 'good') {
     showMessage('You missed clean water!', 700);
+    streak = 0;
+    bonus2x = false;
+    bonus3x = false;
   } else {
     showMessage('Good job avoiding dirty water!', 650);
   }
@@ -185,7 +221,7 @@ function clearDrops() {
 function startGame() {
   score = 0;
   lives = 3;
-  timeLeft = 30;
+  speedIncreaseCounter = 0;
   running = true;
   lastSpawn = 0;
   spawnDelay = 650;
@@ -203,7 +239,6 @@ function startGame() {
   
   clearDrops();
   updateHud();
-  updateTimer();
   startScreen.classList.add('hidden');
   difficultyScreen.classList.add('hidden');
   gameOverScreen.classList.add('hidden');
@@ -213,20 +248,6 @@ function startGame() {
 
   cancelAnimationFrame(animationId);
   animationId = requestAnimationFrame(gameLoop);
-
-  clearInterval(timerInterval);
-  timerStart = Date.now();
-  timerInterval = setInterval(() => {
-    const elapsedSec = Math.floor((Date.now() - timerStart) / 1000);
-    const remaining = Math.max(0, 30 - elapsedSec);
-    if (remaining !== timeLeft) {
-      timeLeft = remaining;
-      updateTimer();
-    }
-    if (timeLeft <= 0 && running && score < 10) {
-      endGame(false);
-    }
-  }, 200);
 }
 
 function launchConfetti() {
@@ -262,7 +283,6 @@ function setButtonCooldown(button, ms) {
 function endGame(isWin = false) {
   running = false;
   cancelAnimationFrame(animationId);
-  clearInterval(timerInterval);
   finalScoreEl.textContent = score;
   const panelText = document.querySelector('.panel-text');
   panelText.textContent = isWin ? 'YOU WIN!!' : 'Game Over!';
@@ -310,4 +330,3 @@ resetBtn.addEventListener('click', () => {
 });
 
 updateHud();
-updateTimer();
