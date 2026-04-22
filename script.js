@@ -1,4 +1,3 @@
-// Log a message to the console to ensure the script is linked correctly
 console.log('JavaScript file is linked correctly.');
 
 const game = document.getElementById('game');
@@ -8,6 +7,8 @@ const finalScoreEl = document.getElementById('finalScore');
 const startScreen = document.getElementById('startScreen');
 const gameOverScreen = document.getElementById('gameOverScreen');
 const difficultyScreen = document.getElementById('difficultyScreen');
+const upgradeScreen = document.getElementById('upgradeScreen');
+const upgradeOptions = document.getElementById('upgradeOptions');
 const startBtn = document.getElementById('startBtn');
 const restartBtn = document.getElementById('restartBtn');
 const resetBtn = document.getElementById('resetBtn');
@@ -34,16 +35,36 @@ let bonus3x = false;
 const drops = [];
 const groundTop = () => game.clientHeight - 72;
 
-// Preload water sound
+// Run / draft state
+let inDraft = false;
+let totalCleanCaught = 0;
+let draftCount = 0;
+let nextDraftMilestone = 25;
+let lastCatchTime = 0;
+let recentCatchChain = 0;
+
+let playerMods = {
+  comboBoost: 0,
+  goldenDrops: false,
+  comboShields: 0,
+  stormHarvest: false,
+  purifier: false,
+  monsoon: false,
+  reservoir: false,
+  extraBucketStacks: 0
+};
+
+let activeUpgrades = [];
+
+// Preload sound
 const waterSound = new Audio('audio/water.mp3');
 waterSound.preload = 'auto';
 
-// Preload applause sound
 const applauseSound = new Audio('audio/applause.mp3');
 applauseSound.preload = 'auto';
 
 function showMessage(text, duration = 900, always = false) {
-  if (!always && Math.random() > 0.45) return; // 45% chance to show messages unless always
+  if (!always && Math.random() > 0.45) return;
 
   messageEl.textContent = text;
   messageEl.classList.add('show');
@@ -74,29 +95,124 @@ function removeDrop(dropObj) {
   dropObj.el.remove();
 }
 
-function catchDrop(dropObj) {
-  if (!running) return;
+function breakCombo() {
+  if (playerMods.comboShields > 0) {
+    playerMods.comboShields--;
+    showMessage('Combo Shield saved your streak!', 950, true);
+    return;
+  }
 
-  dropObj.el.style.transform = "scale(1.2)";
-  dropObj.el.style.opacity = "0.6";
+  streak = 0;
+  bonus2x = false;
+  bonus3x = false;
+  recentCatchChain = 0;
+}
+
+function getDraftInterval(draftCountValue) {
+  if (draftCountValue < 10) return 25;
+  return Math.floor(draftCountValue / 10) * 50;
+}
+
+function resetRunState() {
+  inDraft = false;
+  totalCleanCaught = 0;
+  draftCount = 0;
+  nextDraftMilestone = 25;
+  lastCatchTime = 0;
+  recentCatchChain = 0;
+  activeUpgrades = [];
+
+  playerMods = {
+    comboBoost: 0,
+    goldenDrops: false,
+    comboShields: 0,
+    stormHarvest: false,
+    purifier: false,
+    monsoon: false,
+    reservoir: false,
+    extraBucketStacks: 0
+  };
+}
+
+function getCleanDropPoints() {
+  let gained = 1;
+
+  if (streak > 10) gained = 2;
+  if (streak > 25) gained = 3;
+
+  if (playerMods.comboBoost > 0 && streak >= 10) {
+    gained += playerMods.comboBoost;
+  }
+
+  if (playerMods.monsoon) {
+    gained += 1;
+  }
+
+  if (playerMods.goldenDrops && Math.random() < 0.10) {
+    gained += 5;
+    showMessage('GOLDEN DROP!', 700, true);
+  }
+
+  return gained;
+}
+
+function handleReservoirBonus(dropObj) {
+  if (!playerMods.reservoir) return;
+  if (totalCleanCaught > 0 && totalCleanCaught % 20 === 0) {
+    score += 10;
+    createSplash('+10', dropObj.x + 18, dropObj.y - 10);
+    showMessage('RESERVOIR BONUS!', 850, true);
+  }
+}
+
+function handleStormHarvest(dropObj) {
+  if (!playerMods.stormHarvest) return;
+
+  const now = performance.now();
+  if (now - lastCatchTime <= 2000) {
+    recentCatchChain++;
+  } else {
+    recentCatchChain = 1;
+  }
+
+  lastCatchTime = now;
+
+  if (recentCatchChain >= 3) {
+    score += 8;
+    createSplash('+8', dropObj.x + 12, dropObj.y - 18);
+    showMessage('STORM HARVEST!', 850, true);
+    recentCatchChain = 0;
+  }
+}
+
+function maybeOpenDraft(dropObj) {
+  if (totalCleanCaught < nextDraftMilestone) return false;
+
+  removeDrop(dropObj);
+  openUpgradeDraft();
+  return true;
+}
+
+function catchDrop(dropObj) {
+  if (!running || inDraft) return;
+
+  dropObj.el.style.transform = 'scale(1.2)';
+  dropObj.el.style.opacity = '0.6';
 
   if (dropObj.type === 'good') {
-    // Play water sound
     waterSound.currentTime = 0;
     waterSound.play().catch(e => console.log('Audio play failed:', e));
 
     streak++;
-    points = 1;
+    totalCleanCaught++;
 
-    if (streak > 10) {
-      points = 2;
-    }
-    if (streak > 25) {
-      points = 3;
-    }
-
+    points = getCleanDropPoints();
     score += points;
     createSplash(`+${points}`, dropObj.x, dropObj.y);
+
+    handleReservoirBonus(dropObj);
+    handleStormHarvest(dropObj);
+
     speedIncreaseCounter += points;
 
     if (streak > 10 && !bonus2x) {
@@ -110,33 +226,36 @@ function catchDrop(dropObj) {
       applauseSound.play().catch(e => console.log('Applause play failed:', e));
     } else if (speedIncreaseCounter >= 50) {
       speedMultiplier += 0.05;
-      spawnDelay = Math.max(300, spawnDelay - 35);
+      spawnDelay = Math.max(260, spawnDelay - 35);
       showMessage('Nice! The rain is picking up!');
       speedIncreaseCounter -= 50;
     } else {
       showMessage('Fresh water collected!', 550);
     }
+
+    updateHud();
+
+    if (maybeOpenDraft(dropObj)) {
+      return;
+    }
   } else {
-    streak = 0;
-    bonus2x = false;
-    bonus3x = false;
+    breakCombo();
     score = Math.max(0, score - 2);
     lives -= 1;
     createSplash('-2', dropObj.x, dropObj.y, true);
     showMessage('You caught dirty water! Watch out!');
+    updateHud();
   }
 
-  updateHud();
   removeDrop(dropObj);
+
   if (lives <= 0) endGame(false);
 }
 
 function missDrop(dropObj) {
   if (dropObj.type === 'good') {
     showMessage('You missed clean water!', 700);
-    streak = 0;
-    bonus2x = false;
-    bonus3x = false;
+    breakCombo();
   } else {
     showMessage('Good job avoiding dirty water!', 650);
   }
@@ -145,7 +264,17 @@ function missDrop(dropObj) {
 
 function spawnDrop() {
   const el = document.createElement('div');
-  const isBad = Math.random() < 0.24;
+
+  let badChance = 0.24;
+  if (playerMods.monsoon) badChance = 0.30;
+
+  let isBad = Math.random() < badChance;
+
+  if (isBad && playerMods.purifier && Math.random() < 0.12) {
+    isBad = false;
+    showMessage('Purified!', 500);
+  }
+
   el.className = `drop ${isBad ? 'bad' : 'good'}`;
 
   const x = 20 + Math.random() * (game.clientWidth - 70);
@@ -179,6 +308,11 @@ function spawnDrop() {
 
 function gameLoop(timestamp) {
   if (!running) return;
+
+  if (inDraft) {
+    animationId = requestAnimationFrame(gameLoop);
+    return;
+  }
 
   if (!lastSpawn) lastSpawn = timestamp;
   if (timestamp - lastSpawn >= spawnDelay) {
@@ -218,38 +352,6 @@ function clearDrops() {
   }
 }
 
-function startGame() {
-  score = 0;
-  lives = 3;
-  speedIncreaseCounter = 0;
-  running = true;
-  lastSpawn = 0;
-  spawnDelay = 650;
-  
-  // Apply difficulty multiplier based on selected difficulty
-  // Easy: 50% slower (multiply by 0.5)
-  // Normal: no change (multiply by 1)
-  // Hard: 15% faster (multiply by 1.15)
-  const difficultyMultipliers = {
-    'easy': 0.5,
-    'normal': 1,
-    'hard': 1.15
-  };
-  speedMultiplier = difficultyMultipliers[selectedDifficulty];
-  
-  clearDrops();
-  updateHud();
-  startScreen.classList.add('hidden');
-  difficultyScreen.classList.add('hidden');
-  gameOverScreen.classList.add('hidden');
-  charityFooter.classList.add('hidden');
-  resetBtn.classList.remove('hidden');
-  showMessage('Catch the clean water!', 1200);
-
-  cancelAnimationFrame(animationId);
-  animationId = requestAnimationFrame(gameLoop);
-}
-
 function launchConfetti() {
   const colors = ['#FFC907', '#2E9DF7', '#8BD1CB', '#4FCB53', '#FF902A', '#F5402C'];
 
@@ -280,12 +382,184 @@ function setButtonCooldown(button, ms) {
   }, ms);
 }
 
+const ALL_UPGRADES = [
+  {
+    id: 'combo_boost',
+    name: 'Combo Boost',
+    description: '+1 point on clean drops while your streak is 10 or higher.',
+    tag: 'SCORING',
+    repeatable: true,
+    apply() {
+      playerMods.comboBoost += 1;
+    }
+  },
+  {
+    id: 'golden_drops',
+    name: 'Golden Drops',
+    description: '10% chance that a clean drop is worth +5 extra points.',
+    tag: 'SCORING',
+    repeatable: false,
+    apply() {
+      playerMods.goldenDrops = true;
+    }
+  },
+  {
+    id: 'combo_shield',
+    name: 'Combo Shield',
+    description: 'Ignore the next combo break caused by a miss or mistake.',
+    tag: 'SURVIVAL',
+    repeatable: true,
+    apply() {
+      playerMods.comboShields += 1;
+    }
+  },
+  {
+    id: 'storm_harvest',
+    name: 'Storm Harvest',
+    description: 'Catch 3 clean drops within 2 seconds to gain +8 bonus points.',
+    tag: 'SCORING',
+    repeatable: false,
+    apply() {
+      playerMods.stormHarvest = true;
+    }
+  },
+  {
+    id: 'extra_bucket',
+    name: 'Extra Bucket',
+    description: 'Gain +1 life immediately.',
+    tag: 'SURVIVAL',
+    repeatable: true,
+    apply() {
+      lives += 1;
+      playerMods.extraBucketStacks += 1;
+      updateHud();
+    }
+  },
+  {
+    id: 'purifier',
+    name: 'Purifier',
+    description: '12% chance for a dirty drop to spawn as a clean drop instead.',
+    tag: 'SURVIVAL',
+    repeatable: false,
+    apply() {
+      playerMods.purifier = true;
+    }
+  },
+  {
+    id: 'reservoir',
+    name: 'Reservoir',
+    description: 'Every 20th clean drop caught grants +10 bonus points.',
+    tag: 'SCORING',
+    repeatable: false,
+    apply() {
+      playerMods.reservoir = true;
+    }
+  },
+  {
+    id: 'monsoon',
+    name: 'Monsoon',
+    description: 'Clean drops are worth +1 point, but dirty drops become more common.',
+    tag: 'RISK/REWARD',
+    repeatable: false,
+    apply() {
+      playerMods.monsoon = true;
+      spawnDelay = Math.max(240, spawnDelay - 40);
+    }
+  }
+];
+
+function getDraftChoices(count = 3) {
+  const available = ALL_UPGRADES.filter(upgrade => {
+    if (upgrade.repeatable) return true;
+    return !activeUpgrades.includes(upgrade.id);
+  });
+
+  const shuffled = [...available].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, Math.min(count, shuffled.length));
+}
+
+function renderUpgradeChoices(choices) {
+  upgradeOptions.innerHTML = '';
+
+  choices.forEach(choice => {
+    const btn = document.createElement('button');
+    btn.className = 'upgrade-card';
+    btn.innerHTML = `
+      <h3>${choice.name}</h3>
+      <p>${choice.description}</p>
+      <span class="tag">${choice.tag}</span>
+    `;
+
+    btn.addEventListener('click', () => {
+      choice.apply();
+      activeUpgrades.push(choice.id);
+      closeUpgradeDraft();
+    });
+
+    upgradeOptions.appendChild(btn);
+  });
+}
+
+function openUpgradeDraft() {
+  inDraft = true;
+  upgradeScreen.classList.remove('hidden');
+  renderUpgradeChoices(getDraftChoices(3));
+  showMessage(`Draft ${draftCount + 1}! Choose an upgrade.`, 1200, true);
+}
+
+function closeUpgradeDraft() {
+  upgradeScreen.classList.add('hidden');
+  const interval = getDraftInterval(draftCount);
+  draftCount++;
+  nextDraftMilestone += interval;
+  inDraft = false;
+}
+
+function startGame() {
+  score = 0;
+  lives = 3;
+  streak = 0;
+  points = 0;
+  speedIncreaseCounter = 0;
+  bonus2x = false;
+  bonus3x = false;
+  running = true;
+  lastSpawn = 0;
+  spawnDelay = 650;
+
+  const difficultyMultipliers = {
+    easy: 0.5,
+    normal: 1,
+    hard: 1.15
+  };
+  speedMultiplier = difficultyMultipliers[selectedDifficulty];
+
+  resetRunState();
+  clearDrops();
+  updateHud();
+
+  startScreen.classList.add('hidden');
+  difficultyScreen.classList.add('hidden');
+  gameOverScreen.classList.add('hidden');
+  upgradeScreen.classList.add('hidden');
+  charityFooter.classList.add('hidden');
+  resetBtn.classList.remove('hidden');
+
+  showMessage('Catch the clean water!', 1200);
+
+  cancelAnimationFrame(animationId);
+  animationId = requestAnimationFrame(gameLoop);
+}
+
 function endGame(isWin = false) {
   running = false;
+  inDraft = false;
   cancelAnimationFrame(animationId);
   finalScoreEl.textContent = score;
-  const panelText = document.querySelector('.panel-text');
+
+  const panelText = gameOverScreen.querySelector('.panel-text');
   panelText.textContent = isWin ? 'YOU WIN!!' : 'Game Over!';
+
   gameOverScreen.classList.remove('hidden');
   charityFooter.classList.remove('hidden');
   showMessage(isWin ? 'Great job! You won!' : 'The well ran dry...');
@@ -323,6 +597,7 @@ restartBtn.addEventListener('click', () => {
   charityFooter.classList.add('hidden');
   difficultyScreen.classList.remove('hidden');
 });
+
 resetBtn.addEventListener('click', () => {
   resetBtn.disabled = true;
   setTimeout(() => { resetBtn.disabled = false; }, 500);

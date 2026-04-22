@@ -458,6 +458,92 @@ Secondary Colors:
       box-shadow: 0 2px 0 #1a5fa0;
     }
 
+    .upgrade-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  z-index: 7;
+  background: rgba(0, 0, 0, 0.18);
+  text-align: center;
+  padding: 20px;
+}
+
+.upgrade-subtext {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111;
+  background: rgba(255,255,255,0.72);
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+
+.upgrade-options {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 340px;
+}
+
+.upgrade-card {
+  border: 3px solid #111;
+  background: #fff7d1;
+  color: #111;
+  text-align: left;
+  padding: 14px 16px;
+  cursor: pointer;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.25);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.upgrade-card:hover {
+  transform: translateY(-2px);
+}
+
+.upgrade-card:active {
+  transform: translateY(3px);
+  box-shadow: 0 3px 0 rgba(0,0,0,0.25);
+}
+
+.upgrade-card h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  line-height: 1.1;
+  letter-spacing: 0.06em;
+}
+
+.upgrade-card p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  letter-spacing: 0.03em;
+}
+
+.upgrade-card .tag {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 8px;
+  background: #2E9DF7;
+  color: #fff;
+  border-radius: 999px;
+  letter-spacing: 0.08em;
+}
+
+.start-screen.hidden,
+.game-over-screen.hidden,
+.difficulty-screen.hidden,
+.upgrade-screen.hidden,
+.charity-footer.hidden,
+.reset-btn.hidden {
+  display: none !important;
+}
+
     @media (max-width: 680px) {
       body {
         padding: 14px;
